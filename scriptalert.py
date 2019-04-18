@@ -1,11 +1,9 @@
 #############################################################
 # This script sends you a text when your code is done running
-# Usage: python scriptalert.py <pid> <user phone number>
-# Triggered based on process id
-# ms 04/15/2019
+# Triggered based on process ids
 #############################################################
 
-import os, sys, psutil
+import os, psutil, argparse
 from socket import gethostname
 from threading import Timer
 from twilio.rest import Client
@@ -16,10 +14,24 @@ twilio_token = os.environ.get('TWILIO_TOKEN')
 twilio_number = os.environ.get('TWILIO_NUMBER')
 client = Client(twilio_sid, twilio_token)
 
-text = 'This is an automated notification that your code has finished running on ' + gethostname() 
+# Configure based on input arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('process_id', nargs='+', help='process ids to track')
+parser.add_argument('-n', metavar='number', required=False, help='phone number to text (no spaces XXXXXXXXXX)')
+parser.add_argument('-t', metavar='tail', required=False, help='text to tag on the end of default message')
+args = parser.parse_args()
+
+if args.t:
+    text = 'This is an automated notification that your code has finished running on ' + gethostname() + '. ' + args.t 
+else:
+    text = 'This is an automated notification that your code has finished running on ' + gethostname() 
 
 class RecTimer(object):
     def __init__(self, interval, pid):
+        """
+        A recursive timer that restarts every interval
+        Stops when the given pid does not exist anymore
+        """
         self.pid = pid
         self.interval = interval
         self.__timer = None
@@ -43,9 +55,9 @@ class RecTimer(object):
     def check_pid(self):
         if not psutil.pid_exists(self.pid):
             print('Process', self.pid, 'finished')
-            outgoing = client.messages.create(to='+1'+sys.argv[2], from_=twilio_number, body=text)
+            outgoing = client.messages.create(to='+1'+args.n, from_=twilio_number, body=text)
             self.stop()
 
-
-checker = RecTimer(60, int(sys.argv[1]))
-checker.start()
+for pp in args.process_id:
+    checker = RecTimer(6666660, int(pp))
+    checker.start()
