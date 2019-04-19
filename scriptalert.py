@@ -55,9 +55,12 @@ class RecTimer(object):
     def check_pid(self):
         if not psutil.pid_exists(self.pid):
             print('Process', self.pid, 'finished')
-            outgoing = client.messages.create(to='+1'+args.n, from_=twilio_number, body=text)
+            try:
+                outgoing = client.messages.create(to='+1'+args.n, from_=twilio_number, body=text)
+            except ValueError:
+                print('Phone Number is Unverified.')
             self.stop()
 
 for pp in args.process_id:
-    checker = RecTimer(6666660, int(pp))
+    checker = RecTimer(60, int(pp))
     checker.start()
